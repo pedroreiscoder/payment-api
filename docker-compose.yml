@@ -1,0 +1,36 @@
+version: '3.7'
+
+services:
+  app:
+    image: 'payment-api'
+    build:
+      context: .
+    container_name: app
+    ports:
+      - '8080:8080'
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/paymentsdb
+      - SPRING_DATASOURCE_USERNAME=compose-postgres
+      - SPRING_DATASOURCE_PASSWORD=compose-postgres
+      - SPRING_DATASOURCE_HIKARI_SCHEMA=payments_schema
+
+  db:
+    image: 'postgres:13.1-alpine'
+    container_name: db
+    ports:
+      - '5432:5432'
+    environment:
+      - POSTGRES_USER=compose-postgres
+      - POSTGRES_PASSWORD=compose-postgres
+      - POSTGRES_DB=paymentsdb
+    volumes:
+      - ./postgres-data:/var/lib/postgresql/data
+      - ./src/main/resources/database/create_schema.sql:/docker-entrypoint-initdb.d/create_schema.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U compose-postgres -d paymentsdb"]
+      interval: 5s
+      timeout: 5s
+      retries: 5

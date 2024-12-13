@@ -1,0 +1,53 @@
+package io.ezycollect.paymentapi.service;
+
+import io.ezycollect.paymentapi.entity.Payment;
+import io.ezycollect.paymentapi.exception.AESEncryptionException;
+import io.ezycollect.paymentapi.repository.PaymentRepository;
+import io.ezycollect.paymentapi.security.CryptographyUtil;
+import io.ezycollect.paymentapi.valueobject.CreatePaymentRequest;
+import io.ezycollect.paymentapi.valueobject.CreatePaymentResponse;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+public class PaymentService {
+
+    private static final String CARD_NUMBER_MASK = "**** **** **** ";
+    private final PaymentRepository paymentRepository;
+
+    @Autowired
+    public PaymentService(PaymentRepository paymentRepository){
+        this.paymentRepository = paymentRepository;
+    }
+
+    @Transactional
+    public CreatePaymentResponse createPayment(CreatePaymentRequest request){
+        String cardNumber = request.getCardNumber();
+        byte[] encryptedCardNumber;
+
+        try{
+            encryptedCardNumber = CryptographyUtil.AES256Encrypt(cardNumber);
+        }catch(Exception e){
+            throw new AESEncryptionException("There was an error when encrypting the credit card information");
+        }
+
+        Payment payment = Payment.builder()
+                .firstName(request.getFirstName())
+                .lastName(request.getLastName())
+                .zipCode(request.getZipCode())
+                .cardNumber(encryptedCardNumber)
+                .build();
+
+        Payment createdPayment = paymentRepository.save(payment);
+        String maskedCardNumber = CARD_NUMBER_MASK + cardNumber.substring(cardNumber.length() - 4);
+
+        return CreatePaymentResponse.builder()
+                .id(createdPayment.getId())
+                .firstName(createdPayment.getFirstName())
+                .lastName(createdPayment.getLastName())
+                .zipCode(createdPayment.getZipCode())
+                .cardNumber(maskedCardNumber)
+                .build();
+    }
+}
