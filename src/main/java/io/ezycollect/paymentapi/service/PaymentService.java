@@ -15,10 +15,13 @@ public class PaymentService {
 
     private static final String CARD_NUMBER_MASK = "**** **** **** ";
     private final PaymentRepository paymentRepository;
+    private final WebHookService webHookService;
 
     @Autowired
-    public PaymentService(PaymentRepository paymentRepository){
+    public PaymentService(PaymentRepository paymentRepository,
+                          WebHookService webHookService){
         this.paymentRepository = paymentRepository;
+        this.webHookService = webHookService;
     }
 
     @Transactional
@@ -41,13 +44,15 @@ public class PaymentService {
 
         Payment createdPayment = paymentRepository.save(payment);
         String maskedCardNumber = CARD_NUMBER_MASK + cardNumber.substring(cardNumber.length() - 4);
-
-        return CreatePaymentResponse.builder()
+        CreatePaymentResponse response = CreatePaymentResponse.builder()
                 .id(createdPayment.getId())
                 .firstName(createdPayment.getFirstName())
                 .lastName(createdPayment.getLastName())
                 .zipCode(createdPayment.getZipCode())
                 .cardNumber(maskedCardNumber)
                 .build();
+
+        webHookService.sendToWebHooks(response);
+        return response;
     }
 }
