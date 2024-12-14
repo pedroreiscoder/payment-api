@@ -1,9 +1,8 @@
 package io.ezycollect.paymentapi.controller;
 
 import io.ezycollect.paymentapi.service.PaymentService;
-import io.ezycollect.paymentapi.valueobject.CreatePaymentRequest;
-import io.ezycollect.paymentapi.valueobject.CreatePaymentResponse;
-import io.ezycollect.paymentapi.valueobject.ErrorResponse;
+import io.ezycollect.paymentapi.service.WebHookService;
+import io.ezycollect.paymentapi.valueobject.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -25,10 +24,13 @@ import org.springframework.web.bind.annotation.RestController;
 public class PaymentController {
 
     private final PaymentService paymentService;
+    private final WebHookService webHookService;
 
     @Autowired
-    public PaymentController(PaymentService paymentService){
+    public PaymentController(PaymentService paymentService,
+                             WebHookService webHookService){
         this.paymentService = paymentService;
+        this.webHookService = webHookService;
     }
 
     @Operation(summary = "Creates a new payment")
@@ -47,6 +49,23 @@ public class PaymentController {
     public ResponseEntity<CreatePaymentResponse> createPayment(@RequestBody @Valid CreatePaymentRequest request){
 
         CreatePaymentResponse response = paymentService.createPayment(request);
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @Operation(summary = "Registers a new webhook")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "201", description = "WebHook was registered successfully",
+                    content = { @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = RegisterWebHookResponse.class))}),
+            @ApiResponse(responseCode = "400", description = "Invalid request",
+                    content = { @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class))})
+    })
+    @PostMapping("/webhooks")
+    public ResponseEntity<RegisterWebHookResponse> registerWebHook(@RequestBody @Valid RegisterWebHookRequest request){
+
+        RegisterWebHookResponse response = webHookService.registerWebHook(request);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }

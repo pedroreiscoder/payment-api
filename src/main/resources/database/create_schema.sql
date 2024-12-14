@@ -7,3 +7,8 @@ CREATE TABLE IF NOT EXISTS payments_schema.payments (
     zip_code CHAR(4) NOT NULL,
     card_number BYTEA NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS payments_schema.webhooks (
+    id BIGSERIAL PRIMARY KEY,
+    url VARCHAR(250) NOT NULL
+);
