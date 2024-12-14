@@ -46,6 +46,7 @@ public class WebHookService {
                 .build();
 
         WebHook createdWebHook = webHookRepository.save(webHook);
+        log.info("New webhook registered with Id {}", createdWebHook.getId());
 
         return RegisterWebHookResponse.builder()
                 .id(createdWebHook.getId())
@@ -56,9 +57,11 @@ public class WebHookService {
     @Async
     public void sendToWebHooks(CreatePaymentResponse payload){
 
+        log.info("Getting all webhooks from database");
         List<WebHook> webHooks = webHookRepository.findAll();
 
         if(webHooks.isEmpty()){
+            log.info("No webhooks found");
             return;
         }
 

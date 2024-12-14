@@ -6,10 +6,12 @@ import io.ezycollect.paymentapi.repository.PaymentRepository;
 import io.ezycollect.paymentapi.security.CryptographyUtil;
 import io.ezycollect.paymentapi.valueobject.CreatePaymentRequest;
 import io.ezycollect.paymentapi.valueobject.CreatePaymentResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 public class PaymentService {
 
@@ -32,6 +34,7 @@ public class PaymentService {
         try{
             encryptedCardNumber = CryptographyUtil.AES256Encrypt(cardNumber);
         }catch(Exception e){
+            log.error("Error when encrypting the credit card information: {}", e.getMessage());
             throw new AESEncryptionException("There was an error when encrypting the credit card information");
         }
 
@@ -43,6 +46,8 @@ public class PaymentService {
                 .build();
 
         Payment createdPayment = paymentRepository.save(payment);
+        log.info("New payment created with Id {}", createdPayment.getId());
+
         String maskedCardNumber = CARD_NUMBER_MASK + cardNumber.substring(cardNumber.length() - 4);
         CreatePaymentResponse response = CreatePaymentResponse.builder()
                 .id(createdPayment.getId())
